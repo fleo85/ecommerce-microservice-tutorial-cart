@@ -1,5 +1,62 @@
 'use strict';
+const Context = require('../models/cart-microservice-context.js')
+var Sequelize = require('sequelize');
 
+function buildUserForDB(user) {
+  var docItem = {}
+  docItem["name"] = user.name;
+  docItem["surname"] = user.surname;
+  return docItem;
+}
+
+function buildUserFromDB(user) {
+  var docItem = {}
+  docItem["id"] = user.id;
+  docItem["name"] = user.name;
+  docItem["surname"] = user.surname;
+  docItem["currentCart"] = null
+  if (user.carts != undefined){
+    user.carts.forEach(function(cart){
+      docItem["currentCart"] = buildCartFromDB(cart)
+    })
+  }
+  return docItem
+}
+
+function buildCartForDB(cart, userId) {
+  var docItem = {}
+  docItem["userId"] = userId
+  docItem["status"] = cart.status;
+  return docItem;
+}
+
+function buildCartFromDB(cart) {
+  var docItem = {}
+  docItem["id"] = cart.id;
+  docItem["status"] = cart.status;
+  if (cart.cartlines != undefined){
+    docItem["products"] = []
+    cart.cartlines.forEach(function(cartline){
+      docItem["products"].push(buildCartLineFromDB(cartline))
+    })
+  }
+  return docItem
+}
+
+function buildCartLineForDB(cartline, cartId) {
+  var docItem = {}
+  docItem["cartId"] = cartId
+  docItem["productId"] = cartline.productId;
+  docItem["quantity"] = cartline.quantity;
+  return docItem;
+}
+
+function buildCartLineFromDB(cartline) {
+  var docItem = {}
+  docItem["productId"] = cartline.productId;
+  docItem["quantity"] = cartline.quantity;
+  return docItem
+}
 
 /**
  * Restituisce i dettagli di un carrello inclusi gli item
@@ -10,23 +67,19 @@
  **/
 exports.usersUserIdCartsCartIdGET = function(userId,cartId) {
   return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "id" : 6,
-  "status" : "status",
-  "products" : [ {
-    "amount" : "amount",
-    "productId" : 1
-  }, {
-    "amount" : "amount",
-    "productId" : 1
-  } ]
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    Context.Cart.findOne({
+      where: {
+        id: cartId
+      },
+      include: [
+        {
+          model: Context.CartLine,
+          required: false
+        }
+      ]
+    }).then(function (document) {
+      resolve(buildCartFromDB(document));
+    })
   });
 }
 
@@ -41,23 +94,21 @@ exports.usersUserIdCartsCartIdGET = function(userId,cartId) {
  **/
 exports.usersUserIdCartsCartIdPUT = function(body,userId,cartId) {
   return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "id" : 6,
-  "status" : "status",
-  "products" : [ {
-    "amount" : "amount",
-    "productId" : 1
-  }, {
-    "amount" : "amount",
-    "productId" : 1
-  } ]
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    Context.sequelizeconn.transaction(t => {
+      return Context.Cart.update(
+        buildCartForDB(body, userId),
+        {
+          where: { id: cartId },
+          transaction: t
+        }
+      )
+    })
+      .then(result => {
+
+        resolve(body);
+      }).catch(error => {
+        console.log(error)
+      });
   });
 }
 
@@ -73,23 +124,34 @@ exports.usersUserIdCartsCartIdPUT = function(body,userId,cartId) {
  **/
 exports.usersUserIdCartsCartIdProductsProductIdPUT = function(body,userId,cartId,productId) {
   return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "id" : 6,
-  "status" : "status",
-  "products" : [ {
-    "amount" : "amount",
-    "productId" : 1
-  }, {
-    "amount" : "amount",
-    "productId" : 1
-  } ]
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    Context.sequelizeconn.transaction(t => {
+      return Context.CartLine.count({
+        where: { productId: productId }
+      }).then(conteggio => {
+        if (conteggio > 0) {
+          return Context.CartLine.update(
+            buildCartLineForDB(body, cartId),
+            {
+              where: { productId: productId },
+              transaction: t
+            }
+          )
+        } else {
+          return Context.CartLine.create(
+            buildCartLineForDB(body, cartId),
+            {
+              transaction: t
+            }
+          )
+        }
+      })
+    })
+      .then(result => {
+
+        resolve(body);
+      }).catch(error => {
+        console.log(error)
+      });
   });
 }
 
@@ -102,36 +164,20 @@ exports.usersUserIdCartsCartIdProductsProductIdPUT = function(body,userId,cartId
  **/
 exports.usersUserIdCartsGET = function(userId) {
   return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "total" : 0,
-  "products" : [ {
-    "id" : 6,
-    "status" : "status",
-    "products" : [ {
-      "amount" : "amount",
-      "productId" : 1
-    }, {
-      "amount" : "amount",
-      "productId" : 1
-    } ]
-  }, {
-    "id" : 6,
-    "status" : "status",
-    "products" : [ {
-      "amount" : "amount",
-      "productId" : 1
-    }, {
-      "amount" : "amount",
-      "productId" : 1
-    } ]
-  } ]
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
+    var result = {
+      carts: [],
+      total: 0
     }
+    Context.Cart.findAndCountAll({
+      where: {userId: userId}
+    }).then(function (products) {
+      console.log(products);
+      result.total = products.count
+      products.rows.forEach(function (product) {
+        result.carts.push(buildCartFromDB(product));
+      })
+      resolve(result);
+    })
   });
 }
 
@@ -144,23 +190,19 @@ exports.usersUserIdCartsGET = function(userId) {
  **/
 exports.usersUserIdCartsPOST = function(userId) {
   return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "id" : 6,
-  "status" : "status",
-  "products" : [ {
-    "amount" : "amount",
-    "productId" : 1
-  }, {
-    "amount" : "amount",
-    "productId" : 1
-  } ]
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    var body = {status: 'open'}
+    Context.sequelizeconn.transaction(t => {
+      return Context.Cart.create(buildCartForDB(body, userId),
+        {
+          transaction: t
+        }).then(updateProduct => {
+          body.id = updateProduct.id
+        })
+    }).then(result => {
+      resolve(body);
+    }).catch(error => {
+      console.log(error)
+    });
   });
 }
 
@@ -173,28 +215,20 @@ exports.usersUserIdCartsPOST = function(userId) {
  **/
 exports.usersUserIdGET = function(userId) {
   return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "surname" : "surname",
-  "currentCart" : {
-    "id" : 6,
-    "status" : "status",
-    "products" : [ {
-      "amount" : "amount",
-      "productId" : 1
-    }, {
-      "amount" : "amount",
-      "productId" : 1
-    } ]
-  },
-  "name" : "name",
-  "id" : 0
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    Context.User.findOne({
+      where: {
+        id: userId
+      },
+      include: [
+        {
+          model: Context.Cart,
+          required: false,
+          where: { status: 'open' }
+        }
+      ]
+    }).then(function (document) {
+      resolve(buildUserFromDB(document));
+    })
   });
 }
 
@@ -206,30 +240,20 @@ exports.usersUserIdGET = function(userId) {
  * userId String 
  * returns User
  **/
-exports.usersUserIdPOST = function(body,userId) {
+exports.usersPOST = function(body) {
   return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "surname" : "surname",
-  "currentCart" : {
-    "id" : 6,
-    "status" : "status",
-    "products" : [ {
-      "amount" : "amount",
-      "productId" : 1
-    }, {
-      "amount" : "amount",
-      "productId" : 1
-    } ]
-  },
-  "name" : "name",
-  "id" : 0
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    Context.sequelizeconn.transaction(t => {
+      return Context.User.create(buildUserForDB(body),
+        {
+          transaction: t
+        }).then(updateProduct => {
+          body.id = updateProduct.id
+        })
+    }).then(result => {
+      resolve(body);
+    }).catch(error => {
+      console.log(error)
+    });
   });
 }
 

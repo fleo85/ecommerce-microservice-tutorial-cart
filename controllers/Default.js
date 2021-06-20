@@ -63,8 +63,8 @@ module.exports.usersUserIdGET = function usersUserIdGET (req, res, next, userId)
     });
 };
 
-module.exports.usersUserIdPOST = function usersUserIdPOST (req, res, next, body, userId) {
-  Default.usersUserIdPOST(body, userId)
+module.exports.usersPOST = function usersPOST (req, res, next, body) {
+  Default.usersPOST(body)
     .then(function (response) {
       utils.writeJson(res, response);
     })

@@ -5,11 +5,27 @@ info:
     \ or HTML."
   version: 0.1.9
 servers:
-- url: http://api.example.com/v1
+- url: http://localhost:8080/v1
   description: "Optional server description, e.g. Main (production) server"
-- url: http://staging-api.example.com
-  description: "Optional server description, e.g. Internal staging server for testing"
 paths:
+  /users:
+    post:
+      description: Crea un nuovo utente
+      operationId: usersPOST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      x-swagger-router-controller: Default
   /users/{userId}:
     get:
       description: Restituisce informazioni su utente ed id del carrello corrente
@@ -23,31 +39,6 @@ paths:
         explode: false
         schema:
           type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-      x-swagger-router-controller: Default
-    post:
-      description: Crea un nuovo utente
-      operationId: usersUserIdPOST
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-        required: true
       responses:
         "200":
           description: OK
@@ -210,16 +201,16 @@ components:
         - id: 6
           status: status
           products:
-          - amount: amount
+          - quantity: 0
             productId: 1
-          - amount: amount
+          - quantity: 0
             productId: 1
         - id: 6
           status: status
           products:
-          - amount: amount
+          - quantity: 0
             productId: 1
-          - amount: amount
+          - quantity: 0
             productId: 1
     Cart:
       properties:
@@ -235,18 +226,18 @@ components:
         id: 6
         status: status
         products:
-        - amount: amount
+        - quantity: 0
           productId: 1
-        - amount: amount
+        - quantity: 0
           productId: 1
     CartLine:
       properties:
         productId:
           type: integer
-        amount:
-          type: string
+        quantity:
+          type: integer
       example:
-        amount: amount
+        quantity: 0
         productId: 1
     User:
       properties:
@@ -264,9 +255,9 @@ components:
           id: 6
           status: status
           products:
-          - amount: amount
+          - quantity: 0
             productId: 1
-          - amount: amount
+          - quantity: 0
             productId: 1
         name: name
         id: 0
