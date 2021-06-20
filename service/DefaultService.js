@@ -93,6 +93,7 @@ exports.usersUserIdCartsCartIdGET = function(userId,cartId) {
  * returns Cart
  **/
 exports.usersUserIdCartsCartIdPUT = function(body,userId,cartId) {
+  //TODO: VERIFY THAT THE STATUS IS CLOSED AND THEN CALL SERVICES OR IMPLEMENT SAGA
   return new Promise(function(resolve, reject) {
     Context.sequelizeconn.transaction(t => {
       return Context.Cart.update(
