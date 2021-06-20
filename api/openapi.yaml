@@ -1,0 +1,272 @@
+openapi: 3.0.0
+info:
+  title: Sample API
+  description: "Optional multiline or single-line description in [CommonMark](http://commonmark.org/help/)\
+    \ or HTML."
+  version: 0.1.9
+servers:
+- url: http://api.example.com/v1
+  description: "Optional server description, e.g. Main (production) server"
+- url: http://staging-api.example.com
+  description: "Optional server description, e.g. Internal staging server for testing"
+paths:
+  /users/{userId}:
+    get:
+      description: Restituisce informazioni su utente ed id del carrello corrente
+        se esiste
+      operationId: usersUserIdGET
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      x-swagger-router-controller: Default
+    post:
+      description: Crea un nuovo utente
+      operationId: usersUserIdPOST
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      x-swagger-router-controller: Default
+  /users/{userId}/carts:
+    get:
+      description: Ritorna tutti i carrelli dell'utente
+      operationId: usersUserIdCartsGET
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartList'
+      x-swagger-router-controller: Default
+    post:
+      description: Crea un carrello vuoto attivo per l'utente
+      operationId: usersUserIdCartsPOST
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+      x-swagger-router-controller: Default
+  /users/{userId}/carts/{cartId}:
+    get:
+      description: Restituisce i dettagli di un carrello inclusi gli item
+      operationId: usersUserIdCartsCartIdGET
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: cartId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+      x-swagger-router-controller: Default
+    put:
+      description: Modifica lo stato del carrello portandolo in finalizzato
+      operationId: usersUserIdCartsCartIdPUT
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: cartId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cart'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+      x-swagger-router-controller: Default
+  /users/{userId}/carts/{cartId}/products/{productId}:
+    put:
+      description: Aggiunge un prodotto con una quantità al carrello
+      operationId: usersUserIdCartsCartIdProductsProductIdPUT
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: cartId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: productId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartLine'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+      x-swagger-router-controller: Default
+components:
+  schemas:
+    CartList:
+      properties:
+        total:
+          type: integer
+        carts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cart'
+      example:
+        total: 0
+        products:
+        - id: 6
+          status: status
+          products:
+          - amount: amount
+            productId: 1
+          - amount: amount
+            productId: 1
+        - id: 6
+          status: status
+          products:
+          - amount: amount
+            productId: 1
+          - amount: amount
+            productId: 1
+    Cart:
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartLine'
+      example:
+        id: 6
+        status: status
+        products:
+        - amount: amount
+          productId: 1
+        - amount: amount
+          productId: 1
+    CartLine:
+      properties:
+        productId:
+          type: integer
+        amount:
+          type: string
+      example:
+        amount: amount
+        productId: 1
+    User:
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        surname:
+          type: string
+        currentCart:
+          $ref: '#/components/schemas/Cart'
+      example:
+        surname: surname
+        currentCart:
+          id: 6
+          status: status
+          products:
+          - amount: amount
+            productId: 1
+          - amount: amount
+            productId: 1
+        name: name
+        id: 0
