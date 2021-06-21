@@ -127,7 +127,7 @@ exports.usersUserIdCartsCartIdProductsProductIdPUT = function(body,userId,cartId
   return new Promise(function(resolve, reject) {
     Context.sequelizeconn.transaction(t => {
       return Context.CartLine.count({
-        where: { productId: productId }
+        where: { productId: productId, cartId: cartId }
       }).then(conteggio => {
         if (conteggio > 0) {
           return Context.CartLine.update(
